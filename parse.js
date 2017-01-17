@@ -103,67 +103,64 @@ var _PARSE_ = (function(){
         }
         });
         out.push(filters.join(''));
-         // 解析模板内容
-        let beg = 0; // 解析文段起始位置
-        let stmbeg = 0;  // 表达式起始位置
-        let stmend = 0; // 表达式结束位置
+         // parse the content
+        let beg = 0; // parse the segment begin
+        let stmbeg = 0;  // expresstion begin
+        let stmend = 0; // expresstion end
         let len = content.length;
-        let preCode = ''; // 表达式前的代码
-        let endCode = ''; // 最后一段代码
-        let stmJs = ''; // 表达式
+        let preCode = ''; // code before expresstion
+        let endCode = ''; // last segment code
+        let stmJs = ''; // expresstion
         while(beg < len) {
-            /* 开始符 */
+            /* start character*/
             stmbeg = content.indexOf('{', beg);
             while(content.charAt(stmbeg - 1) === '\\') {
-                // 遇到转义的情况
+                // if escape character
                 stmbeg = content.indexOf('{', stmbeg + 1);
             }
             if(stmbeg === -1) {
-                // 到达最后一段代码
                 endCode = content.substr(beg);
                 out.push('OUT.push(\'' + endCode + '\');');
                 break;
             }
-
-            /* 结束符 */
+            /* end character*/
             stmend = content.indexOf('}', stmbeg);
             while(content.charAt(stmend - 1) === '\\') {
-                // 遇到转义的情况
+                // if escape character
                 stmend = content.indexOf('}', stmend + 1);
             }
             if(stmend === -1) {
-                // 没有结束符
                 break;
             }
 
-            // 开始符之前代码 
+            // code before start character 
             preCode = content.substring(beg, stmbeg);
 
             if(content.charAt(stmbeg - 1) === '$') {
-                // 针对变量取值
+                // get value of variable
                 out.push(`OUT.push(\'${preCode.substr(0, preCode.length-1)}\');`);
                 stmJs = content.substring(stmbeg + 1, stmend);
 
                 // 处理过滤器
                 let tmp = '';
                 stmJs.split('|').forEach((item, index) => {
-                if(index === 0) {
-                    // 变量，强制转码
-                    tmp = item;
-                } else {
-                    // 过滤器
-                    let farr = item.split(':');
-                    tmp = `FILTERS['${farr[0]}'](${tmp}`;
+                    if(index === 0) {
+                        // 变量，强制转码
+                        tmp = item;
+                    } else {
+                        // 过滤器
+                        let farr = item.split(':');
+                        tmp = `FILTERS['${farr[0]}'](${tmp}`;
 
-                    if(farr[1]) {
-                    // 带变量的过滤器
-                    farr[1].split(',').forEach((fitem) => {
-                        tmp = `${tmp}, ${fitem}`;
-                    }); 
+                        if(farr[1]) {
+                            // 带变量的过滤器
+                            farr[1].split(',').forEach((fitem) => {
+                                tmp = `${tmp}, ${fitem}`;
+                            }); 
+                        }
+
+                        tmp = `${tmp})`; // 追加结尾
                     }
-
-                    tmp = `${tmp})`; // 追加结尾
-                }
                 });
 
                 out.push(`OUT.push((${tmp}).toString());`);
